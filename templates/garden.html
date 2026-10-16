@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>whimsy — The Stranger Pond</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Marcellus&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-ambient: radial-gradient(circle at 50% 20%, #1e2e1f 0%, #101c12 55%, #070d08 100%);
+      --text-main: #fbf6ec;
+      --text-sub: #b2c9b4;
+      --card-bg: rgba(26, 40, 28, 0.78);
+      --card-border: rgba(150, 196, 142, 0.3);
+      --accent-glow: #a4f593;
+    }
+
+    body.night {
+      --bg-ambient: radial-gradient(circle at 50% 20%, #151d33 0%, #0c1221 55%, #04070e 100%);
+      --text-main: #f3f0ff;
+      --text-sub: #9ea8d4;
+      --card-bg: rgba(18, 24, 44, 0.85);
+      --card-border: rgba(125, 144, 219, 0.35);
+      --accent-glow: #9ba8ff;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      width: 100vw;
+      background: var(--bg-ambient);
+      font-family: 'Marcellus', serif;
+      color: var(--text-main);
+      padding: 6.5rem 1.5rem 4rem 1.5rem;
+      position: relative;
+      overflow-x: hidden;
+      transition: background 1s ease;
+    }
+
+    .brand-top-left {
+      position: fixed;
+      top: 1.5rem;
+      left: 2rem;
+      font-size: 1.5rem;
+      letter-spacing: 0.15em;
+      color: var(--text-main);
+      text-decoration: none;
+      z-index: 50;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+    }
+    .brand-top-left span { color: var(--accent-glow); }
+
+    .brand-bottom-right {
+      position: fixed;
+      bottom: 1.2rem;
+      right: 2rem;
+      font-size: 0.85rem;
+      letter-spacing: 0.08em;
+      color: rgba(255, 255, 255, 0.6);
+      font-style: italic;
+      z-index: 50;
+      pointer-events: none;
+    }
+
+    #pondCanvas {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .top-bar {
+      position: fixed;
+      top: 1.5rem;
+      right: 2rem;
+      display: flex;
+      gap: 0.8rem;
+      z-index: 50;
+    }
+
+    .pill-btn {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      color: var(--text-main);
+      padding: 0.55rem 1.15rem;
+      border-radius: 999px;
+      font-family: inherit;
+      font-size: 0.85rem;
+      cursor: pointer;
+      backdrop-filter: blur(10px);
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+      transition: all 0.25s ease;
+    }
+    .pill-btn:hover {
+      transform: translateY(-2px);
+      border-color: var(--accent-glow);
+    }
+
+    .header-section {
+      text-align: center;
+      max-width: 650px;
+      margin: 0 auto 3rem auto;
+      position: relative;
+      z-index: 10;
+    }
+
+    .header-section h1 {
+      font-size: 2.2rem;
+      font-weight: 500;
+      margin-bottom: 0.5rem;
+      letter-spacing: 0.04em;
+    }
+
+    .header-section p {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.25rem;
+      color: var(--text-sub);
+      font-style: italic;
+      line-height: 1.6;
+    }
+
+    .grid-container {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+      gap: 1.8rem;
+      position: relative;
+      z-index: 10;
+    }
+
+    .letter-leaf {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 1.8rem;
+      text-decoration: none;
+      color: inherit;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 12px 30px rgba(0,0,0,0.35);
+      transition: all 0.3s cubic-bezier(0.2, 0.9, 0.3, 1);
+      position: relative;
+    }
+
+    .letter-leaf:hover {
+      transform: translateY(-6px);
+      border-color: var(--accent-glow);
+      background: rgba(35, 54, 38, 0.9);
+      box-shadow: 0 20px 45px rgba(0,0,0,0.5);
+    }
+
+    .leaf-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.8rem;
+    }
+
+    .leaf-stamp {
+      font-size: 1.8rem;
+      filter: drop-shadow(0 2px 5px rgba(0,0,0,0.3));
+    }
+
+    .leaf-tag {
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-sub);
+      border: 1px solid var(--card-border);
+      padding: 0.2rem 0.6rem;
+      border-radius: 999px;
+    }
+
+    .leaf-to {
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-bottom: 0.6rem;
+      color: var(--text-main);
+    }
+
+    .leaf-snippet {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.05rem;
+      line-height: 1.6;
+      color: var(--text-sub);
+      margin-bottom: 1.2rem;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .leaf-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding-top: 0.8rem;
+    }
+
+    .leaf-author {
+      font-size: 0.88rem;
+      color: var(--accent-glow);
+      font-style: italic;
+    }
+
+    .leaf-open-hint {
+      font-size: 0.75rem;
+      letter-spacing: 0.05em;
+      color: var(--text-sub);
+      text-transform: uppercase;
+    }
+
+    .empty-state {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 4rem 1rem;
+      background: var(--card-bg);
+      border: 1px dashed var(--card-border);
+      border-radius: 16px;
+    }
+
+    .empty-state h3 {
+      font-size: 1.3rem;
+      font-weight: 500;
+      margin-bottom: 0.5rem;
+    }
+
+    .empty-state p {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.15rem;
+      color: var(--text-sub);
+      font-style: italic;
+      margin-bottom: 1.5rem;
+    }
+  </style>
+</head>
+<body>
+
+  <a href="/" class="brand-top-left">whimsy <span>🌿</span></a>
+  <div class="brand-bottom-right">~by catcurls</div>
+
+  <canvas id="pondCanvas"></canvas>
+
+  <div class="top-bar">
+    <button class="pill-btn" id="themeBtn">🌙 Night Glade</button>
+    <a href="/" class="pill-btn">✍️ Pen a Letter</a>
+  </div>
+
+  <div class="header-section">
+    <h1>The Wandering Pond</h1>
+    <p>Words scattered like fallen leaves into the gentle forest breeze. Tap any note to open its ceremony.</p>
+  </div>
+
+  <div class="grid-container">
+    {% for letter in letters %}
+      <a href="/letter/{{ letter['secret_code'] }}" class="letter-leaf">
+        <div>
+          <div class="leaf-header">
+            <span class="leaf-stamp">{{ letter['stamp_type'] }}</span>
+            <span class="leaf-tag">Stranger Note</span>
+          </div>
+          <div class="leaf-to">{{ letter['recipient'] }}</div>
+          <p class="leaf-snippet">{{ letter['message'] }}</p>
+        </div>
+        <div class="leaf-footer">
+          <span class="leaf-author">— {{ letter['author'] }}</span>
+          <span class="leaf-open-hint">Unseal ❦</span>
+        </div>
+      </a>
+    {% else %}
+      <div class="empty-state">
+        <h3>The pond is quiet</h3>
+        <p>No floating notes yet. Be the first to leave a gentle thought for someone walking by.</p>
+        <a href="/" class="pill-btn">✍️ Drop the First Letter</a>
+      </div>
+    {% endfor %}
+  </div>
+
+  <script>
+    let isNight = false;
+    const themeBtn = document.getElementById('themeBtn');
+    themeBtn.addEventListener('click', () => {
+      isNight = !isNight;
+      document.body.classList.toggle('night', isNight);
+      themeBtn.textContent = isNight ? '☀️ Sunlit Glade' : '🌙 Night Glade';
+      initParticles();
+    });
+
+    const canvas = document.getElementById('pondCanvas');
+    const ctx = canvas.getContext('2d');
+    let width, height;
+    function resize() { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; }
+    window.addEventListener('resize', resize);
+    resize();
+
+    class Particle {
+      constructor() {
+        this.x = Math.random() * width;
+        this.y = Math.random() * height;
+        this.vx = (Math.random() - 0.5) * 0.5;
+        this.vy = -0.2 - Math.random() * 0.4;
+        this.size = 1.8 + Math.random() * 1.6;
+        this.phase = Math.random() * Math.PI * 2;
+      }
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        this.phase += 0.04;
+        if (this.y < -15) {
+          this.y = height + 15;
+          this.x = Math.random() * width;
+        }
+        if (this.x < -15) this.x = width + 15;
+        if (this.x > width + 15) this.x = -15;
+      }
+      draw() {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        if (!isNight) {
+          ctx.fillStyle = `rgba(164, 245, 147, ${0.25 + Math.sin(this.phase) * 0.2})`;
+          ctx.shadowColor = '#8ce076';
+          ctx.shadowBlur = 8;
+        } else {
+          ctx.fillStyle = `rgba(155, 168, 255, ${0.3 + Math.sin(this.phase) * 0.25})`;
+          ctx.shadowColor = '#9ea8d4';
+          ctx.shadowBlur = 10;
+        }
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    let particles = [];
+    function initParticles() {
+      particles = Array.from({ length: 32 }, () => new Particle());
+    }
+    initParticles();
+
+    function loop() {
+      ctx.clearRect(0, 0, width, height);
+      particles.forEach(p => { p.update(); p.draw(); });
+      requestAnimationFrame(loop);
+    }
+    loop();
+  </script>
+</body>
+</html>

@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>whimsy — Forest Letter Garden</title>
+
+  <!-- Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Alex+Brush&family=Caveat:wght@500;700&family=Cinzel:wght@500;700&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Marcellus&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-ambient: radial-gradient(circle at 50% 15%, #3d5838 0%, #203321 45%, #0e170f 100%);
+      --text-main: #fbf6ec;
+      --text-sub: #b2c9b4;
+      --card-bg: rgba(26, 40, 28, 0.75);
+      --card-border: rgba(150, 196, 142, 0.35);
+      --input-bg: rgba(16, 26, 17, 0.65);
+      --btn-bg: #4c6b47;
+      --btn-hover: #3b5637;
+      --accent-glow: #a4f593;
+    }
+
+    body.night {
+      --bg-ambient: radial-gradient(circle at 50% 15%, #182038 0%, #0d1222 50%, #04070e 100%);
+      --text-main: #f3f0ff;
+      --text-sub: #9ea8d4;
+      --card-bg: rgba(18, 24, 44, 0.82);
+      --card-border: rgba(125, 144, 219, 0.35);
+      --input-bg: rgba(10, 14, 28, 0.7);
+      --btn-bg: #4c4d7d;
+      --btn-hover: #3b3c67;
+      --accent-glow: #9ba8ff;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      width: 100vw;
+      background: var(--bg-ambient);
+      font-family: 'Marcellus', serif;
+      color: var(--text-main);
+      overflow-x: hidden;
+      transition: background 1s ease;
+      position: relative;
+    }
+
+    /* Fixed Branding */
+    .brand-top-left {
+      position: fixed;
+      top: 1.5rem;
+      left: 2rem;
+      font-size: 1.5rem;
+      letter-spacing: 0.15em;
+      color: var(--text-main);
+      text-decoration: none;
+      z-index: 50;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+    }
+    .brand-top-left span { color: var(--accent-glow); }
+
+    .brand-bottom-right {
+      position: fixed;
+      bottom: 1.2rem;
+      right: 2rem;
+      font-size: 0.85rem;
+      letter-spacing: 0.08em;
+      color: rgba(255, 255, 255, 0.6);
+      font-style: italic;
+      z-index: 50;
+      pointer-events: none;
+    }
+
+    /* Background Interactive Canvas */
+    #forestCanvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Top Bar Controls */
+    .top-bar {
+      position: fixed;
+      top: 1.5rem;
+      right: 2rem;
+      display: flex;
+      gap: 0.8rem;
+      z-index: 50;
+    }
+
+    .pill-btn {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      color: var(--text-main);
+      padding: 0.6rem 1.2rem;
+      border-radius: 999px;
+      font-family: inherit;
+      font-size: 0.85rem;
+      cursor: pointer;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+      transition: all 0.25s ease;
+    }
+
+    .pill-btn:hover {
+      transform: translateY(-2px);
+      border-color: var(--accent-glow);
+    }
+
+    /* Full-Screen Page Structure */
+    .viewport-container {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 6.5rem 1.5rem 4rem 1.5rem;
+    }
+
+    /* Tab Switcher */
+    .nav-tabs {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 2.5rem;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      padding: 0.4rem;
+      border-radius: 999px;
+      backdrop-filter: blur(8px);
+    }
+
+    .nav-tab {
+      padding: 0.6rem 1.5rem;
+      border-radius: 999px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.25s ease;
+      color: var(--text-sub);
+    }
+
+    .nav-tab.active {
+      background: var(--btn-bg);
+      color: #fff;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    }
+
+    .view-section {
+      width: 100%;
+      max-width: 1100px;
+      display: none;
+    }
+
+    .view-section.active {
+      display: block;
+      animation: fadeIn 0.4s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Flash Message */
+    .flash-alert {
+      background: rgba(189, 70, 70, 0.85);
+      color: #fff;
+      padding: 0.75rem 1.5rem;
+      border-radius: 999px;
+      margin-bottom: 1.5rem;
+      font-size: 0.9rem;
+      backdrop-filter: blur(6px);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    }
+
+    /* Split View */
+    .desk-split {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 2.5rem;
+      align-items: start;
+    }
+
+    @media (max-width: 900px) {
+      .desk-split { grid-template-columns: 1fr; }
+    }
+
+    .form-panel {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 2.2rem;
+      backdrop-filter: blur(14px);
+      box-shadow: 0 20px 50px rgba(0,0,0,0.45);
+    }
+
+    .form-panel h2 {
+      font-size: 1.6rem;
+      font-weight: 500;
+      margin-bottom: 0.3rem;
+    }
+
+    .form-panel p.subhead {
+      font-size: 0.85rem;
+      color: var(--text-sub);
+      margin-bottom: 1.5rem;
+    }
+
+    .audience-toggle {
+      display: flex;
+      gap: 0.8rem;
+      margin-bottom: 1.4rem;
+    }
+
+    .audience-btn {
+      flex: 1;
+      text-align: center;
+      padding: 0.7rem 0.5rem;
+      background: var(--input-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 999px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      color: var(--text-sub);
+    }
+
+    .audience-btn.active {
+      background: var(--btn-bg);
+      color: #fff;
+      border-color: var(--accent-glow);
+    }
+
+    .form-group {
+      margin-bottom: 1.2rem;
+    }
+
+    label {
+      display: block;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-sub);
+      margin-bottom: 0.35rem;
+    }
+
+    input, textarea {
+      width: 100%;
+      background: var(--input-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 0.8rem 1rem;
+      color: var(--text-main);
+      font-family: inherit;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s ease;
+    }
+
+    input:focus, textarea:focus {
+      border-color: var(--accent-glow);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 140px;
+      line-height: 1.6;
+    }
+
+    .chip-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+      gap: 0.5rem;
+    }
+
+    .chip-opt {
+      background: var(--input-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 0.55rem;
+      text-align: center;
+      font-size: 0.82rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .chip-opt.selected {
+      background: var(--btn-bg);
+      border-color: var(--accent-glow);
+      color: #fff;
+    }
+
+    .stamp-row {
+      display: flex;
+      gap: 0.6rem;
+    }
+
+    .stamp-opt {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--input-bg);
+      border: 1px solid var(--card-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .stamp-opt.selected {
+      background: #8b3c3c;
+      border-color: #ff9999;
+      transform: scale(1.1);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+
+    .submit-btn {
+      width: 100%;
+      padding: 0.95rem;
+      background: var(--btn-bg);
+      color: #fff;
+      border: 1px solid var(--accent-glow);
+      border-radius: 999px;
+      font-family: inherit;
+      font-size: 1rem;
+      cursor: pointer;
+      margin-top: 1rem;
+      transition: all 0.25s ease;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    }
+
+    .submit-btn:hover {
+      background: var(--btn-hover);
+      transform: translateY(-2px);
+    }
+
+    /* Live Letter Preview */
+    .preview-wrapper {
+      position: sticky;
+      top: 6.5rem;
+    }
+
+    .live-letter {
+      position: relative;
+      border-radius: 12px;
+      padding: 2.2rem 2rem;
+      min-height: 380px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.55);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      transition: background 0.4s ease, color 0.4s ease;
+    }
+
+    /* Stationery Paper Presets */
+    .paper-parchment {
+      background: #fbf5e6;
+      background-image: radial-gradient(#decba9 1.2px, transparent 1.2px);
+      background-size: 16px 16px;
+      color: #2b221a;
+      border-color: #d6be9a;
+    }
+    .paper-ivy {
+      background: #17241b;
+      background-image: radial-gradient(#2d4734 1.2px, transparent 1.2px);
+      background-size: 16px 16px;
+      color: #ebf7ec;
+      border-color: #3b5e45;
+    }
+    .paper-rose {
+      background: #fdf2f2;
+      background-image: radial-gradient(#f0cece 1.2px, transparent 1.2px);
+      background-size: 16px 16px;
+      color: #3d2323;
+      border-color: #e8bfbf;
+    }
+    .paper-midnight {
+      background: #0f1628;
+      background-image: radial-gradient(#253254 1.2px, transparent 1.2px);
+      background-size: 16px 16px;
+      color: #e9eeff;
+      border-color: #374775;
+    }
+
+    .preview-stamp-seal {
+      position: absolute;
+      top: 1.2rem;
+      right: 1.4rem;
+      font-size: 2rem;
+      opacity: 0.85;
+    }
+
+    .preview-to {
+      font-size: 1.3rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      border-bottom: 1px solid rgba(0,0,0,0.1);
+      padding-bottom: 0.4rem;
+    }
+    .paper-ivy .preview-to, .paper-midnight .preview-to {
+      border-bottom-color: rgba(255, 255, 255, 0.15);
+    }
+
+    .preview-msg {
+      font-size: 1.05rem;
+      line-height: 1.7;
+      min-height: 180px;
+      white-space: pre-wrap;
+    }
+
+    .preview-from {
+      margin-top: 1.5rem;
+      text-align: right;
+      font-style: italic;
+      font-size: 0.95rem;
+      opacity: 0.85;
+    }
+
+    /* Font Presets */
+    .font-cormorant { font-family: 'Cormorant Garamond', serif; }
+    .font-caveat { font-family: 'Caveat', cursive; font-size: 1.35rem !important; }
+    .font-alexbrush { font-family: 'Alex Brush', cursive; font-size: 1.5rem !important; }
+    .font-cinzel { font-family: 'Cinzel', serif; font-size: 0.95rem !important; }
+
+    /* Unlock Card */
+    .unlock-card {
+      max-width: 520px;
+      margin: 2rem auto;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 3rem 2.4rem;
+      text-align: center;
+      backdrop-filter: blur(14px);
+      box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+    }
+
+    .unlock-card .key-emblem {
+      font-size: 2.8rem;
+      margin-bottom: 1rem;
+      display: inline-block;
+      animation: pulse 3s infinite ease-in-out;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 0.8; }
+      50% { transform: scale(1.1); opacity: 1; }
+    }
+
+    .code-input {
+      text-align: center;
+      font-size: 1.4rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      padding: 0.9rem;
+      margin: 1.5rem 0;
+    }
+
+    /* Stranger Pond Grid */
+    .pond-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+      gap: 1.8rem;
+      margin-top: 1rem;
+    }
+
+    .pond-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 1.6rem;
+      text-decoration: none;
+      color: inherit;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      transition: all 0.3s cubic-bezier(0.2, 0.9, 0.3, 1);
+    }
+
+    .pond-card:hover {
+      transform: translateY(-6px);
+      border-color: var(--accent-glow);
+      background: rgba(35, 54, 38, 0.9);
+    }
+
+    .pond-stamp { font-size: 1.6rem; margin-bottom: 0.6rem; }
+    .pond-to { font-size: 1.15rem; font-weight: 500; margin-bottom: 0.5rem; }
+    .pond-body {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.05rem;
+      line-height: 1.6;
+      color: var(--text-sub);
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      margin-bottom: 1rem;
+    }
+    .pond-from {
+      text-align: right;
+      font-size: 0.85rem;
+      color: var(--accent-glow);
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+
+  <a href="/" class="brand-top-left">whimsy <span>🌿</span></a>
+  <div class="brand-bottom-right">~by catcurls</div>
+
+  <canvas id="forestCanvas"></canvas>
+
+  <div class="top-bar">
+    <button class="pill-btn" id="themeBtn">🌙 Night Glade</button>
+  </div>
+
+  <div class="viewport-container">
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <div class="flash-alert">{{ messages[0] }}</div>
+      {% endif %}
+    {% endwith %}
+
+    <div class="nav-tabs">
+      <div class="nav-tab active" data-tab="writeTab">✍️ Write a Letter</div>
+      <div class="nav-tab" data-tab="unlockTab">🗝️ Open with Secret Code</div>
+      <div class="nav-tab" data-tab="pondTab">🍃 Stranger Pond ({{ public_letters|length }})</div>
+    </div>
+
+    <!-- TAB 1: WRITE -->
+    <div class="view-section active" id="writeTab">
+      <div class="desk-split">
+        <div class="form-panel">
+          <h2>Pen a Quiet Letter</h2>
+          <p class="subhead">Write into the quiet forest; words will find their way.</p>
+
+          <form action="/create" method="POST">
+            <input type="hidden" name="audience" id="audienceInput" value="loved_one">
+            <input type="hidden" name="paper_theme" id="paperInput" value="paper-parchment">
+            <input type="hidden" name="font_style" id="fontInput" value="font-cormorant">
+            <input type="hidden" name="stamp_type" id="stampInput" value="🌿">
+
+            <label>Who will receive this note?</label>
+            <div class="audience-toggle">
+              <div class="audience-btn active" data-aud="loved_one">🌸 Someone I Know</div>
+              <div class="audience-btn" data-aud="stranger">🍃 A Passing Stranger</div>
+            </div>
+
+            <div class="form-group">
+              <label id="toLabel">To (Recipient Name)</label>
+              <input type="text" id="recipientField" name="recipient" placeholder="Type their name or title..." required>
+            </div>
+
+            <div class="form-group">
+              <label>Your Letter</label>
+              <textarea id="messageField" name="message" placeholder="Whisper your thoughts onto this page..." required></textarea>
+            </div>
+
+            <div class="form-group">
+              <label>From (Your Name / Signature)</label>
+              <input type="text" id="authorField" name="author" placeholder="How do you want to sign off?" required>
+            </div>
+
+            <div class="form-group">
+              <label>Stationery Paper Theme</label>
+              <div class="chip-grid">
+                <div class="chip-opt selected" data-paper="paper-parchment">Parchment</div>
+                <div class="chip-opt" data-paper="paper-ivy">Forest Ivy</div>
+                <div class="chip-opt" data-paper="paper-rose">Frosted Rose</div>
+                <div class="chip-opt" data-paper="paper-midnight">Twilight Sky</div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Script Typography</label>
+              <div class="chip-grid">
+                <div class="chip-opt selected font-cormorant" data-font="font-cormorant">Editorial Serif</div>
+                <div class="chip-opt font-caveat" data-font="font-caveat">Organic Hand</div>
+                <div class="chip-opt font-alexbrush" data-font="font-alexbrush">Calligraphy</div>
+                <div class="chip-opt font-cinzel" data-font="font-cinzel">Ethereal Classic</div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Wax Seal Emblem</label>
+              <div class="stamp-row">
+                <div class="stamp-opt selected" data-stamp="🌿">🌿</div>
+                <div class="stamp-opt" data-stamp="🍄">🍄</div>
+                <div class="stamp-opt" data-stamp="🌙">🌙</div>
+                <div class="stamp-opt" data-stamp="🦋">🦋</div>
+                <div class="stamp-opt" data-stamp="🌸">🌸</div>
+              </div>
+            </div>
+
+            <button type="submit" class="submit-btn">Seal Letter & Generate Secret Code ❦</button>
+          </form>
+        </div>
+
+        <!-- Live Parchment Preview -->
+        <div class="preview-wrapper">
+          <div class="live-letter paper-parchment font-cormorant" id="previewLetter">
+            <div class="preview-stamp-seal" id="previewStamp">🌿</div>
+            <div>
+              <div class="preview-to" id="previewTo">To Someone Cherished...</div>
+              <div class="preview-msg" id="previewMsg">Your letter will form here as you write into the desk...</div>
+            </div>
+            <div class="preview-from" id="previewFrom">— With warm whispers</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: UNLOCK -->
+    <div class="view-section" id="unlockTab">
+      <div class="unlock-card">
+        <div class="key-emblem">🗝️</div>
+        <h2>Unlock a Letter</h2>
+        <p style="color: var(--text-sub); margin-top: 0.4rem; font-size: 0.95rem;">
+          Enter the secret forest key given to you by the sender to unseal their envelope.
+        </p>
+
+        <form action="/unlock" method="POST">
+          <input type="text" name="secret_code" class="code-input" placeholder="e.g. MOSS-7392" required autofocus>
+          <button type="submit" class="submit-btn">Unseal Envelope ❦</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- TAB 3: POND -->
+    <div class="view-section" id="pondTab">
+      <div style="text-align: center; margin-bottom: 2rem;">
+        <h2>The Wandering Pond</h2>
+        <p style="color: var(--text-sub); font-size: 0.95rem; font-style: italic;">
+          Gentle thoughts released into the forest for anyone who needs to read them.
+        </p>
+      </div>
+
+      <div class="pond-grid">
+        {% for letter in public_letters %}
+          <a href="/letter/{{ letter['secret_code'] }}" class="pond-card">
+            <div>
+              <div class="pond-stamp">{{ letter['stamp_type'] }}</div>
+              <div class="pond-to">{{ letter['recipient'] }}</div>
+              <p class="pond-body">{{ letter['message'] }}</p>
+            </div>
+            <div class="pond-from">— {{ letter['author'] }}</div>
+          </a>
+        {% else %}
+          <div style="grid-column: 1/-1; text-align: center; padding: 3rem; color: var(--text-sub); font-style: italic;">
+            The pond is quiet. Be the first to drop a gentle letter for a stranger.
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const navTabs = document.querySelectorAll('.nav-tab');
+    const sections = document.querySelectorAll('.view-section');
+
+    navTabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        navTabs.forEach(t => t.classList.remove('active'));
+        sections.forEach(s => s.classList.remove('active'));
+
+        tab.classList.add('active');
+        document.getElementById(tab.dataset.tab).classList.add('active');
+      });
+    });
+
+    const recipientField = document.getElementById('recipientField');
+    const messageField = document.getElementById('messageField');
+    const authorField = document.getElementById('authorField');
+
+    const previewTo = document.getElementById('previewTo');
+    const previewMsg = document.getElementById('previewMsg');
+    const previewFrom = document.getElementById('previewFrom');
+    const previewStamp = document.getElementById('previewStamp');
+    const previewLetter = document.getElementById('previewLetter');
+
+    recipientField.addEventListener('input', (e) => {
+      previewTo.textContent = e.target.value ? `To ${e.target.value}` : "To Someone Cherished...";
+    });
+    messageField.addEventListener('input', (e) => {
+      previewMsg.textContent = e.target.value || "Your letter will form here as you write into the desk...";
+    });
+    authorField.addEventListener('input', (e) => {
+      previewFrom.textContent = e.target.value ? `— ${e.target.value}` : "— With warm whispers";
+    });
+
+    const audienceBtns = document.querySelectorAll('.audience-btn');
+    const audienceInput = document.getElementById('audienceInput');
+    const toLabel = document.getElementById('toLabel');
+
+    audienceBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        audienceBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const aud = btn.dataset.aud;
+        audienceInput.value = aud;
+
+        if (aud === 'stranger') {
+          toLabel.textContent = "Stranger Title";
+          recipientField.placeholder = "e.g., A Gentle Traveler, or Anyone Feeling Tired";
+        } else {
+          toLabel.textContent = "To (Recipient Name)";
+          recipientField.placeholder = "Type their name...";
+        }
+      });
+    });
+
+    const paperChips = document.querySelectorAll('[data-paper]');
+    const paperInput = document.getElementById('paperInput');
+    paperChips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        paperChips.forEach(c => c.classList.remove('selected'));
+        chip.classList.add('selected');
+        const paper = chip.dataset.paper;
+        paperInput.value = paper;
+        previewLetter.className = previewLetter.className.replace(/paper-\w+/g, '') + ' ' + paper;
+      });
+    });
+
+    const fontChips = document.querySelectorAll('[data-font]');
+    const fontInput = document.getElementById('fontInput');
+    fontChips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        fontChips.forEach(c => c.classList.remove('selected'));
+        chip.classList.add('selected');
+        const font = chip.dataset.font;
+        fontInput.value = font;
+        previewLetter.className = previewLetter.className.replace(/font-\w+/g, '') + ' ' + font;
+      });
+    });
+
+    const stampOpts = document.querySelectorAll('.stamp-opt');
+    const stampInput = document.getElementById('stampInput');
+    stampOpts.forEach(opt => {
+      opt.addEventListener('click', () => {
+        stampOpts.forEach(s => s.classList.remove('selected'));
+        opt.classList.add('selected');
+        const stamp = opt.dataset.stamp;
+        stampInput.value = stamp;
+        previewStamp.textContent = stamp;
+      });
+    });
+
+    let isNight = false;
+    const themeBtn = document.getElementById('themeBtn');
+    themeBtn.addEventListener('click', () => {
+      isNight = !isNight;
+      document.body.classList.toggle('night', isNight);
+      themeBtn.textContent = isNight ? '☀️ Sunlit Glade' : '🌙 Night Glade';
+      initCreatures();
+    });
+
+    const canvas = document.getElementById('forestCanvas');
+    const ctx = canvas.getContext('2d');
+    let width, height;
+    function resize() { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; }
+    window.addEventListener('resize', resize);
+    resize();
+
+    class Creature {
+      constructor() {
+        this.x = Math.random() * width;
+        this.y = Math.random() * height;
+        this.vx = (Math.random() - 0.5) * 0.7;
+        this.vy = (Math.random() - 0.5) * 0.7;
+        this.phase = Math.random() * Math.PI * 2;
+        this.size = 2.2 + Math.random() * 1.5;
+      }
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        this.phase += 0.05;
+        if (Math.random() < 0.02) {
+          this.vx += (Math.random() - 0.5) * 0.25;
+          this.vy += (Math.random() - 0.5) * 0.25;
+        }
+        if (this.x < -30) this.x = width + 30;
+        if (this.x > width + 30) this.x = -30;
+        if (this.y < -30) this.y = height + 30;
+        if (this.y > height + 30) this.y = -30;
+      }
+      draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        if (!isNight) {
+          const wing = Math.sin(this.phase * 4) * 4.5;
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+          ctx.beginPath();
+          ctx.ellipse(-this.size, -2, Math.abs(wing) + 1, 2, -0.4, 0, Math.PI * 2);
+          ctx.ellipse(this.size, -2, Math.abs(wing) + 1, 2, 0.4, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.arc(0, 0, this.size, 0, Math.PI * 2);
+          ctx.fillStyle = '#fff9e6';
+          ctx.shadowColor = '#bdfa9d';
+          ctx.shadowBlur = 8;
+          ctx.fill();
+        } else {
+          const glow = (Math.sin(this.phase) + 1) / 2;
+          ctx.beginPath();
+          ctx.arc(0, 0, this.size * (2 + glow * 2.5), 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(182, 255, 148, ${glow * 0.25})`;
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.arc(0, 0, this.size, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(235, 255, 204, ${0.4 + glow * 0.6})`;
+          ctx.shadowColor = '#a8ff78';
+          ctx.shadowBlur = 10 * glow;
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+    }
+
+    let creatures = [];
+    function initCreatures() {
+      creatures = Array.from({ length: 28 }, () => new Creature());
+    }
+    initCreatures();
+
+    function renderLoop() {
+      ctx.clearRect(0, 0, width, height);
+      creatures.forEach(c => { c.update(); c.draw(); });
+      requestAnimationFrame(renderLoop);
+    }
+    renderLoop();
+  </script>
+</body>
+</html>
