@@ -1,3 +1,4 @@
+import os
 import sqlite3
 import random
 import string
@@ -6,8 +7,12 @@ from flask import Flask, render_template, request, redirect, url_for, flash
 app = Flask(__name__)
 app.secret_key = 'whimsy_forest_secret_fairy_key'
 
+# Reliable absolute database path for Render
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+DB_PATH = os.path.join(BASE_DIR, 'letters.db')
+
 def get_db():
-    conn = sqlite3.connect('letters.db')
+    conn = sqlite3.connect(DB_PATH, timeout=10)
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -31,6 +36,7 @@ def init_db():
     conn.commit()
     conn.close()
 
+# Initialize database schema on boot
 init_db()
 
 def generate_secret_code():
